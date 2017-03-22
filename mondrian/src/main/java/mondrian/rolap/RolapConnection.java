@@ -5,7 +5,7 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2001-2005 Julian Hyde
-// Copyright (C) 2005-2015 Pentaho and others
+// Copyright (C) 2005-2017 Pentaho and others
 // All Rights Reserved.
 */
 package mondrian.rolap;
@@ -26,7 +26,9 @@ import org.eigenbase.util.property.StringProperty;
 
 import org.olap4j.Scenario;
 
+import javax.sql.DataSource;
 import java.io.PrintWriter;
+import java.lang.ref.Reference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
@@ -395,6 +397,8 @@ public class RolapConnection extends ConnectionBase {
                     jdbcConnectString, jdbcProperties);
 
         } else if (dataSourceName != null) {
+            Properties jdbcProperties = getJdbcProperties(connectInfo);
+            storeConnectionPropertiesToThreadLocal(jdbcProperties);
             appendKeyValue(
                 buf,
                 RolapConnectionProperties.DataSource.name(),
@@ -440,6 +444,11 @@ public class RolapConnection extends ConnectionBase {
                 + "' must contain either '" + RolapConnectionProperties.Jdbc
                 + "' or '" + RolapConnectionProperties.DataSource + "'");
         }
+    }
+    private static void storeConnectionPropertiesToThreadLocal(Properties properties){
+        //ThreadLocal<Properties> jdbcProperties = new ThreadLocal<>();
+        DataSourceResolver.extraJdbcProperties.set(properties);
+        //jdbcProperties.set(properties);
     }
 
     /**
@@ -604,12 +613,16 @@ public class RolapConnection extends ConnectionBase {
      */
     public Result execute(final Execution execution) {
         execution.copyMDC();
+        final Reference<?>[] copyOfInheritableThreadLocal =  ThreadLocalUtils.copyInheritableThreadLocal();
+
         return
             server.getResultShepherd()
                 .shepherdExecution(
                     execution,
                     new Callable<Result>() {
                         public Result call() throws Exception {
+                            ThreadLocalUtils.restoreOldInheritableThreadLocal(copyOfInheritableThreadLocal);
+
                             return executeInternal(execution);
                         }
                     });

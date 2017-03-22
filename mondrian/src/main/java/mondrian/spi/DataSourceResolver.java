@@ -4,12 +4,13 @@
 * http://www.eclipse.org/legal/epl-v10.html.
 * You must accept the terms of that agreement to use this software.
 *
-* Copyright (c) 2002-2013 Pentaho Corporation..  All rights reserved.
+* Copyright (c) 2002-2017 Pentaho Corporation..  All rights reserved.
 */
 
 package mondrian.spi;
 
 import javax.sql.DataSource;
+import java.util.Properties;
 
 /**
  * Plugin class that resolves data source name to {@link javax.sql.DataSource}
@@ -23,6 +24,8 @@ import javax.sql.DataSource;
  * @author jhyde
  */
 public interface DataSourceResolver {
+
+    ThreadLocal<Properties> extraJdbcProperties = new ThreadLocal<>();
 
     /**
      * Converts a data source name to a JDBC data source object.
