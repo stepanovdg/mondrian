@@ -26,7 +26,9 @@ import org.eigenbase.util.property.StringProperty;
 
 import org.olap4j.Scenario;
 
+import javax.sql.DataSource;
 import java.io.PrintWriter;
+import java.lang.ref.Reference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
@@ -604,12 +606,16 @@ public class RolapConnection extends ConnectionBase {
      */
     public Result execute(final Execution execution) {
         execution.copyMDC();
+        final Reference<?>[] copyOfInheritableThreadLocal =  ThreadLocalUtils.copyInheritableThreadLocal();
+
         return
             server.getResultShepherd()
                 .shepherdExecution(
                     execution,
                     new Callable<Result>() {
                         public Result call() throws Exception {
+                            ThreadLocalUtils.restoreOldInheritableThreadLocal(copyOfInheritableThreadLocal);
+
                             return executeInternal(execution);
                         }
                     });
